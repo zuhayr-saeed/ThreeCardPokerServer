@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.geometry.Pos?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="serverGameStateController">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <!-- Top area: Title and theme switch -->
+    <top>
+        <HBox spacing="30" alignment="CENTER_LEFT">
+            <Label text="Server Game State" styleClass="section-title"/>
+            <Pane HBox.hgrow="ALWAYS"></Pane> <!-- Spacer to push button to the right -->
+            <Button fx:id="changeThemeButton" text="Change Theme" onAction="#handleChangeTheme" styleClass="button"/>
+        </HBox>
+    </top>
+
+    <!-- Center area: Connected clients label and game state log -->
+    <center>
+        <VBox spacing="20" alignment="CENTER">
+            <Label text="Connected Clients:" styleClass="label"/>
+            <Label fx:id="connectedClientsLabel" text="0" styleClass="client-count"/>
+            <Label text="Game Events:" styleClass="label"/>
+            <ListView fx:id="gameStateListView" prefWidth="1000" prefHeight="500" styleClass="log-listview"/>
+        </VBox>
+    </center>
+
+    <!-- Bottom area: Stop Server Button -->
+    <bottom>
+        <HBox spacing="20" alignment="CENTER">
+            <Button fx:id="stopServerButton" text="Stop Server" onAction="#handleStopServer" styleClass="button"/>
+        </HBox>
+    </bottom>
+</BorderPane>

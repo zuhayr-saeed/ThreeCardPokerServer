@@ -1,0 +1,80 @@
+/* neonTheme.css */
+
+.root {
+    -fx-font-family: "Open Sans", sans-serif;
+    /* Subtle dark gradient for depth */
+    -fx-background-color: linear-gradient(to bottom, #000000, #050505);
+    -fx-text-fill: #39ff14;
+}
+
+.welcome-title {
+    -fx-font-size: 50px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ff00ff;
+    /* Neon glow effect */
+    -fx-effect: dropshadow(gaussian, #ff00ff, 10, 0.7, 0, 0);
+    -fx-padding: 20;
+}
+
+.subtitle {
+    -fx-font-size: 24px;
+    -fx-text-fill: #39ff14;
+    -fx-effect: dropshadow(gaussian, #39ff14, 5, 0.5, 0, 0);
+}
+
+.label {
+    -fx-font-size: 18px;
+    -fx-text-fill: #ff00ff;
+}
+
+.client-count {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #39ff14;
+    -fx-effect: dropshadow(gaussian, #39ff14, 5, 0.5, 0, 0);
+    -fx-padding: 10 0;
+}
+
+.section-title {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ff00ff;
+    -fx-effect: dropshadow(gaussian, #ff00ff, 5, 0.5, 0, 0);
+    -fx-padding: 10 0;
+}
+
+.text-field {
+    -fx-pref-width: 150px;
+    -fx-background-color: transparent;
+    -fx-text-fill: #39ff14;
+    -fx-border-color: #ff00ff;
+    -fx-border-radius: 5;
+    -fx-padding: 5;
+    -fx-effect: dropshadow(gaussian, #ff00ff, 5, 0.3, 0, 0);
+}
+
+.button {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-background-color: #ff00ff;
+    -fx-text-fill: #000000;
+    -fx-background-radius: 5;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, #ff00ff, 5, 0.5, 0, 0);
+    -fx-transition: background-color 0.2s ease-in-out;
+}
+
+.button:hover {
+    -fx-background-color: #ff1493; /* Deep Pink */
+}
+
+.log-listview {
+    -fx-font-size: 16px;
+    -fx-control-inner-background: #1a1a1a;
+    -fx-text-fill: #39ff14;
+    -fx-border-color: #ff00ff;
+    -fx-border-radius: 5;
+    -fx-padding: 5;
+    -fx-effect: dropshadow(gaussian, #39ff14, 3, 0.3, 0, 0);
+}
