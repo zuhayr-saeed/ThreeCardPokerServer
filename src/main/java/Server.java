@@ -1,4 +1,3 @@
-// Server.java
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -31,6 +30,7 @@ public class Server implements Runnable {
                 clients.put(clientId, clientHandler);
                 new Thread(clientHandler).start();
                 updateGameState("Client " + clientId + " connected.");
+                updateConnectedClientsCount(clients.size());
             }
         } catch (IOException e) {
             if (running) {
@@ -40,9 +40,6 @@ public class Server implements Runnable {
         }
     }
 
-    /**
-     * Stops the server and closes all client connections.
-     */
     public void stopServer() {
         running = false;
         try {
@@ -57,33 +54,25 @@ public class Server implements Runnable {
         }
     }
 
-    /**
-     * Removes a client from the active clients map.
-     *
-     * @param clientId The ID of the client to remove.
-     */
     public void removeClient(int clientId) {
         clients.remove(clientId);
         updateGameState("Client " + clientId + " disconnected.");
+        updateConnectedClientsCount(clients.size());
     }
 
-    /**
-     * Sets the game state controller for GUI updates.
-     *
-     * @param controller The server game state controller.
-     */
     public void setGameStateController(serverGameStateController controller) {
         this.gameStateController = controller;
     }
 
-    /**
-     * Updates the game state on the GUI.
-     *
-     * @param message The message to display.
-     */
     public void updateGameState(String message) {
         if (gameStateController != null) {
             gameStateController.updateGameState(message);
+        }
+    }
+
+    public void updateConnectedClientsCount(int count) {
+        if (gameStateController != null) {
+            gameStateController.updateConnectedClientsCount(count);
         }
     }
 }

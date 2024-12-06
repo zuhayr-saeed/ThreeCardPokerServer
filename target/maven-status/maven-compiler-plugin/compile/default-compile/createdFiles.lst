@@ -1,11 +1,11 @@
-Deck.class
-Player.class
 ThreeCardLogic.class
 PokerInfo.class
 ClientHandler.class
-JavaFXTemplate.class
-serverGameStateController.class
+Dealer.class
 serverIntroController.class
 Server.class
 Card.class
-Dealer.class
+Deck.class
+Player.class
+JavaFXTemplate.class
+serverGameStateController.class

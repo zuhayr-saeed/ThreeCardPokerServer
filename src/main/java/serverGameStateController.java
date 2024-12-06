@@ -9,17 +9,10 @@ import javafx.scene.Scene;
 
 public class serverGameStateController {
 
-    @FXML
-    private ListView<String> gameStateListView;
-
-    @FXML
-    private Button stopServerButton;
-
-    @FXML
-    private Button changeThemeButton;
-
-    @FXML
-    private Label connectedClientsLabel;
+    @FXML private ListView<String> gameStateListView;
+    @FXML private Button stopServerButton;
+    @FXML private Button changeThemeButton;
+    @FXML private Label connectedClientsLabel;
 
     private Server server;
     private String[] themes = {"/styles/darkTheme.css", "/styles/lightTheme.css", "/styles/neonTheme.css"};
@@ -45,7 +38,7 @@ public class serverGameStateController {
             stopServerButton.setDisable(true);
             updateGameState("Server stopped.");
         } catch (Exception e) {
-            showAlert("Error", "An error occurred while stopping the server: " + e.getMessage());
+            showAlert("Error", "An error occurred while stopping the server.");
             e.printStackTrace();
         }
     }

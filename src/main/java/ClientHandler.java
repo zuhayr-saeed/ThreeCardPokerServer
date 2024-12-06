@@ -1,7 +1,7 @@
-// ClientHandler.java
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class ClientHandler implements Runnable {
 
@@ -12,7 +12,7 @@ public class ClientHandler implements Runnable {
     private ObjectOutputStream output;
     private boolean running = false;
 
-    // Game-related fields
+    // Game related fields:
     private Player player;
     private Dealer dealer;
 
@@ -32,7 +32,6 @@ public class ClientHandler implements Runnable {
             running = true;
 
             while (running) {
-                // Read PokerInfo from client
                 PokerInfo pokerInfo = (PokerInfo) input.readObject();
                 processClientRequest(pokerInfo);
             }
@@ -43,58 +42,92 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Processes the client's request and responds accordingly.
-     *
-     * @param pokerInfo The PokerInfo object received from the client.
-     */
-    private void processClientRequest(PokerInfo pokerInfo) {
+    private void processClientRequest(PokerInfo info) {
         try {
-            switch (pokerInfo.getAction()) {
+            switch (info.getAction()) {
                 case "PLACE_BETS":
-                    player.setAnteBet(pokerInfo.getAnteBet());
-                    player.setPairPlusBet(pokerInfo.getPairPlusBet());
-                    server.updateGameState("Client " + clientId + " placed bets: Ante $" + pokerInfo.getAnteBet() + ", Pair Plus $" + pokerInfo.getPairPlusBet());
-
-                    // Deal cards
-                    dealer.deal(player, null);
-                    pokerInfo.setPlayerHand(player.getHand());
-                    pokerInfo.setDealerHand(dealer.getHand()); // Dealer's hand sent as hidden
-                    pokerInfo.setAction("CARDS_DEALT");
-                    output.writeObject(pokerInfo);
+                    player.setAnteBet(info.getAnteBet());
+                    player.setPairPlusBet(info.getPairPlusBet());
+                    // Acknowledge bets
+                    PokerInfo response = new PokerInfo();
+                    response.setAction("BETS_ACCEPTED");
+                    output.writeObject(response);
                     output.flush();
+                    server.updateGameState("Client " + clientId + " placed bets: Ante $" + info.getAnteBet() + ", Pair Plus $" + info.getPairPlusBet());
+                    break;
+
+                case "REQUEST_CARDS":
+                    dealer.reset();
+                    dealer.deal(player, null);
+                    PokerInfo dealInfo = new PokerInfo();
+                    dealInfo.setAction("CARDS_DEALT");
+                    dealInfo.setPlayerHand(player.getHand());
+                    dealInfo.setDealerHand(dealer.getHand()); // hidden on client side for now, client shows backs
+                    output.writeObject(dealInfo);
+                    output.flush();
+                    server.updateGameState("Client " + clientId + " cards dealt.");
                     break;
 
                 case "PLAY_DECISION":
-                    boolean play = pokerInfo.isPlay();
+                    boolean play = info.isPlay();
                     server.updateGameState("Client " + clientId + " decided to " + (play ? "Play" : "Fold"));
-
                     if (!play) {
-                        // Player folds; calculate losses
+                        // Player folds
+                        // Round result: player loses ante and pair plus bets
                         int totalLoss = player.getAnteBet() + player.getPairPlusBet();
                         player.subtractWinnings(totalLoss);
-                        pokerInfo.setTotalWinnings(player.getWinnings());
-                        pokerInfo.setAction("ROUND_RESULT");
-                        pokerInfo.setResultMessage("You folded. You lost $" + totalLoss);
-                        output.writeObject(pokerInfo);
+
+                        PokerInfo foldResult = new PokerInfo();
+                        foldResult.setAction("ROUND_RESULT");
+                        foldResult.setTotalWinnings(player.getWinnings());
+                        foldResult.setResultMessage("You folded. You lost $" + totalLoss);
+                        output.writeObject(foldResult);
                         output.flush();
                     } else {
-                        // Player plays; reveal dealer's hand and evaluate
-                        pokerInfo.setDealerHand(dealer.getHand());
-                        int result = ThreeCardLogic.compareHands(dealer.getHand(), player.getHand());
-                        int winnings = calculateWinnings(result);
-                        player.addWinnings(winnings);
-                        pokerInfo.setTotalWinnings(player.getWinnings());
-                        pokerInfo.setAction("ROUND_RESULT");
-                        pokerInfo.setResultMessage(generateResultMessage(result, winnings));
-                        output.writeObject(pokerInfo);
+                        // Player plays, reveal dealer cards
+                        PokerInfo showDealer = new PokerInfo();
+                        showDealer.setAction("SHOW_DEALER");
+                        showDealer.setPlayerHand(player.getHand());
+                        showDealer.setDealerHand(dealer.getHand());
+                        output.writeObject(showDealer);
                         output.flush();
 
-                        server.updateGameState("Client " + clientId + " result: " + pokerInfo.getResultMessage());
+                        // Compare hands and evaluate results
+                        int result = ThreeCardLogic.compareHands(dealer.getHand(), player.getHand());
+                        int pairPlusWinnings = ThreeCardLogic.evalPPWinnings(player.getHand(), player.getPairPlusBet());
+                        int totalWinnings = pairPlusWinnings;
+
+                        if (ThreeCardLogic.dealerQualifies(dealer.getHand())) {
+                            if (result == 2) {
+                                // Player wins
+                                totalWinnings += player.getAnteBet() * 2; // ante+play win
+                                String resMsg = "You win against the dealer! You won $" + totalWinnings;
+                                player.addWinnings(totalWinnings);
+                                sendRoundResult(resMsg, player.getWinnings());
+                            } else if (result == 1) {
+                                // Dealer wins
+                                totalWinnings -= player.getAnteBet() * 2; // lose ante and play
+                                player.addWinnings(totalWinnings);
+                                sendRoundResult("You lose to the dealer. You lost $" + (-totalWinnings), player.getWinnings());
+                            } else {
+                                // Tie
+                                totalWinnings += player.getAnteBet(); // return ante
+                                player.addWinnings(totalWinnings);
+                                sendRoundResult("It's a tie. You get your ante back. You won $" + totalWinnings, player.getWinnings());
+                            }
+                        } else {
+                            // Dealer does not qualify
+                            totalWinnings += player.getAnteBet() * 2; // Ante and Play returned as a win
+                            player.addWinnings(totalWinnings);
+                            sendRoundResult("Dealer does not qualify. You won your ante. Total winning this round: $" + totalWinnings, player.getWinnings());
+                        }
+
+                        server.updateGameState("Client " + clientId + " round completed.");
                     }
                     break;
 
                 default:
+                    server.updateGameState("Unknown action from client " + clientId + ": " + info.getAction());
                     break;
             }
         } catch (Exception e) {
@@ -102,71 +135,21 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Calculates the player's winnings based on the game result.
-     *
-     * @param result The result of the hand comparison.
-     * @return The total winnings or losses.
-     */
-    private int calculateWinnings(int result) {
-        int totalWinnings = 0;
-
-        // Evaluate Pair Plus winnings
-        int ppWinnings = ThreeCardLogic.evalPPWinnings(player.getHand(), player.getPairPlusBet());
-        totalWinnings += ppWinnings;
-
-        // Evaluate Ante and Play wagers
-        if (result == 2) { // Player wins
-            totalWinnings += player.getAnteBet() * 2; // Ante and Play bets pay 1:1
-        } else if (result == 0) { // Tie
-            totalWinnings += player.getAnteBet(); // Return Ante bet
-        } else {
-            totalWinnings -= player.getAnteBet() * 2; // Lose Ante and Play bets
-        }
-
-        return totalWinnings;
+    private void sendRoundResult(String message, int totalWinnings) throws Exception {
+        PokerInfo resultInfo = new PokerInfo();
+        resultInfo.setAction("ROUND_RESULT");
+        resultInfo.setTotalWinnings(totalWinnings);
+        resultInfo.setResultMessage(message);
+        output.writeObject(resultInfo);
+        output.flush();
     }
 
-    /**
-     * Generates a result message based on the game outcome.
-     *
-     * @param result        The result of the hand comparison.
-     * @param totalWinnings The total winnings or losses.
-     * @return The result message to display to the player.
-     */
-    private String generateResultMessage(int result, int totalWinnings) {
-        StringBuilder message = new StringBuilder();
-        if (result == 2) {
-            message.append("You win against the dealer! ");
-        } else if (result == 1) {
-            message.append("You lose to the dealer. ");
-        } else {
-            message.append("It's a tie with the dealer. ");
-        }
-
-        if (totalWinnings >= 0) {
-            message.append("You won $" + totalWinnings);
-        } else {
-            message.append("You lost $" + (-totalWinnings));
-        }
-        return message.toString();
-    }
-
-    /**
-     * Stops the client handler and closes resources.
-     */
     public void stopClient() {
         running = false;
         try {
-            if (input != null) {
-                input.close();
-            }
-            if (output != null) {
-                output.close();
-            }
-            if (clientSocket != null && !clientSocket.isClosed()) {
-                clientSocket.close();
-            }
+            if (input != null) input.close();
+            if (output != null) output.close();
+            if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close();
             server.removeClient(clientId);
         } catch (Exception e) {
             e.printStackTrace();

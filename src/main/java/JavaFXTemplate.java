@@ -11,7 +11,6 @@ public class JavaFXTemplate extends Application {
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/FXML/serverIntro.fxml"));
             Scene scene = new Scene(root, 1500, 750);
-            // Default to dark theme initially
             scene.getStylesheets().add(getClass().getResource("/styles/darkTheme.css").toExternalForm());
 
             primaryStage.setTitle("Three Card Poker Server - Intro");

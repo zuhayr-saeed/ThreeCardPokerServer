@@ -10,11 +10,8 @@ import javafx.stage.Stage;
 
 public class serverIntroController {
 
-    @FXML
-    private TextField portField;
-
-    @FXML
-    private Button startButton;
+    @FXML private TextField portField;
+    @FXML private Button startButton;
 
     @FXML
     private void handleStartServer(ActionEvent event) {
